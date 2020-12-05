@@ -93,3 +93,7 @@ ENV/
 *.iml
 out
 gen
+
+
+# Testing directory
+testing/*

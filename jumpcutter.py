@@ -61,7 +61,7 @@ parser.add_argument('--sounded_speed', type=float, default=1.00, help="the speed
 parser.add_argument('--silent_speed', type=float, default=5.00, help="the speed that silent frames should be played at. 999999 for jumpcutting.")
 parser.add_argument('--frame_margin', type=float, default=1, help="some silent frames adjacent to sounded frames are included to provide context. How many frames on either the side of speech should be included? That's this variable.")
 parser.add_argument('--sample_rate', type=float, default=44100, help="sample rate of the input and output videos")
-parser.add_argument('--frame_rate', type=float, default=30, help="frame rate of the input and output videos. optional... I try to find it out myself, but it doesn't always work.")
+parser.add_argument('--frame_rate', type=float, default=-1, help="frame rate of the input and output videos. optional... I try to find it out myself, but it doesn't always work.")
 parser.add_argument('--frame_quality', type=int, default=3, help="quality of frames to be extracted from input video. 1 is highest, 31 is lowest, 3 is the default.")
 
 args = parser.parse_args()
@@ -92,16 +92,14 @@ AUDIO_FADE_ENVELOPE_SIZE = 400 # smooth out transitiion's audio by quickly fadin
     
 createPath(TEMP_FOLDER)
 
-command = "ffmpeg -i "+INPUT_FILE+" -qscale:v "+str(FRAME_QUALITY)+" "+TEMP_FOLDER+"/frame%06d.jpg -hide_banner"
+# convert input video into jpg sequence
+command = "ffmpeg -i \'"+INPUT_FILE+"\' -qscale:v "+str(FRAME_QUALITY)+" "+TEMP_FOLDER+"/frame%06d.jpg -hide_banner"
+subprocess.call(command, shell=True)
+print(command)
+# extract audio from input video into .wav file
+command = "ffmpeg -i \'"+INPUT_FILE+"\' -ab 160k -ac 2 -ar "+str(SAMPLE_RATE)+" -vn "+TEMP_FOLDER+"/audio.wav"
 subprocess.call(command, shell=True)
 
-command = "ffmpeg -i "+INPUT_FILE+" -ab 160k -ac 2 -ar "+str(SAMPLE_RATE)+" -vn "+TEMP_FOLDER+"/audio.wav"
-
-subprocess.call(command, shell=True)
-
-command = "ffmpeg -i "+TEMP_FOLDER+"/input.mp4 2>&1"
-f = open(TEMP_FOLDER+"/params.txt", "w")
-subprocess.call(command, shell=True, stdout=f)
 
 
 
@@ -109,22 +107,17 @@ sampleRate, audioData = wavfile.read(TEMP_FOLDER+"/audio.wav")
 audioSampleCount = audioData.shape[0]
 maxAudioVolume = getMaxVolume(audioData)
 
-f = open(TEMP_FOLDER+"/params.txt", 'r+')
-pre_params = f.read()
-f.close()
-params = pre_params.split('\n')
-for line in params:
-    m = re.search('Stream #.*Video.* ([0-9]*) fps',line)
-    if m is not None:
-        frameRate = float(m.group(1))
+if frameRate < 0:
+    args = "ffprobe -v error -select_streams v -of default=noprint_wrappers=1:nokey=1 -show_entries stream=r_frame_rate".split() + [INPUT_FILE]
+    rate = subprocess.run(args,capture_output=True).stdout.decode()
+    numerator,denominator = [int(num) for num in rate.split('/')]
+    frameRate = numerator / denominator
 
 samplesPerFrame = sampleRate/frameRate
 
 audioFrameCount = int(math.ceil(audioSampleCount/samplesPerFrame))
 
 hasLoudAudio = np.zeros((audioFrameCount))
-
-
 
 for i in range(audioFrameCount):
     start = int(i*samplesPerFrame)
