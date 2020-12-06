@@ -19,3 +19,10 @@ recommended this to me. However, my pyinstaller build did not work. :( HELP
 
 ## Building with nix
 `nix-build` to get a script with all the libraries and ffmpeg, `nix-build -A bundle` to get a single binary.
+
+## Planned Additions:
+* [x] better framerate detection
+* [ ] detect variable framerate video and reencode as fixed framerate to avoid audio drift (figure out if vfr was actually the issue)
+* [x] support for file paths that contain spaces
+* [ ] multithread main processing for performance speedup
+
