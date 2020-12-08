@@ -106,7 +106,7 @@ print(command)
 subprocess.call(command, shell=True)
 print(command)
 # extract audio from input video into .wav file
-command = f"ffmpeg -i \'{INPUT_FILE}\' -ab 160k -ac 2 -ar {SAMPLE_RATE} -vn {os.path.join(TEMP_FOLDER,audio.wav)} -hide_banner"
+command = f"ffmpeg -i \'{INPUT_FILE}\' -ab 160k -ac 2 -ar {SAMPLE_RATE} -vn {os.path.join(TEMP_FOLDER,'audio.wav')} -hide_banner"
 subprocess.call(command, shell=True)
 
 
