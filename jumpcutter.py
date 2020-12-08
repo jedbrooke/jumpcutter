@@ -11,6 +11,9 @@ from shutil import copyfile, rmtree
 import os
 import argparse
 from pytube import YouTube
+import os
+
+
 
 def downloadFile(url):
     name = YouTube(url).streams.first().download()
@@ -63,6 +66,7 @@ parser.add_argument('--frame_margin', type=float, default=1, help="some silent f
 parser.add_argument('--sample_rate', type=float, default=44100, help="sample rate of the input and output videos")
 parser.add_argument('--frame_rate', type=float, default=-1, help="frame rate of the input and output videos. optional... I try to find it out myself, but it doesn't always work.")
 parser.add_argument('--frame_quality', type=int, default=3, help="quality of frames to be extracted from input video. 1 is highest, 31 is lowest, 3 is the default.")
+parser.add_argument('--frame_quality_crf',type=int,default=24,help="set crf for final encode, valid range: 0-63, 0 is highest, 51 is lowest, tpyical is 17-28, default is 24")
 
 args = parser.parse_args()
 
@@ -78,7 +82,10 @@ if args.url != None:
 else:
     INPUT_FILE = args.input_file
 URL = args.url
+
 FRAME_QUALITY = args.frame_quality
+FRAME_QUALITY_CRF = args.frame_quality_crf
+
 
 assert INPUT_FILE != None , "why u put no input file, that dum"
     
@@ -88,16 +95,18 @@ else:
     OUTPUT_FILE = inputToOutputFilename(INPUT_FILE)
 
 TEMP_FOLDER = "TEMP"
+
 AUDIO_FADE_ENVELOPE_SIZE = 400 # smooth out transitiion's audio by quickly fading in/out (arbitrary magic number whatever)
     
 createPath(TEMP_FOLDER)
 
 # convert input video into jpg sequence
-command = "ffmpeg -i \'"+INPUT_FILE+"\' -qscale:v "+str(FRAME_QUALITY)+" "+TEMP_FOLDER+"/frame%06d.jpg -hide_banner"
+command = "ffmpeg -i \'"+INPUT_FILE+ f"\' -qscale:v {FRAME_QUALITY} " +TEMP_FOLDER+"/frame%06d.jpg -pix_fmt yuv420p -hide_banner"
+print(command)
 subprocess.call(command, shell=True)
 print(command)
 # extract audio from input video into .wav file
-command = "ffmpeg -i \'"+INPUT_FILE+"\' -ab 160k -ac 2 -ar "+str(SAMPLE_RATE)+" -vn "+TEMP_FOLDER+"/audio.wav"
+command = "ffmpeg -i \'"+INPUT_FILE+"\' -ab 160k -ac 2 -ar "+str(SAMPLE_RATE)+" -vn "+TEMP_FOLDER+"/audio.wav -hide_banner"
 subprocess.call(command, shell=True)
 
 
@@ -190,7 +199,11 @@ for endGap in range(outputFrame,audioFrameCount):
     copyFrame(int(audioSampleCount/samplesPerFrame)-1,endGap)
 '''
 
-command = "ffmpeg -framerate "+str(frameRate)+" -i "+TEMP_FOLDER+"/newFrame%06d.jpg -i "+TEMP_FOLDER+"/audioNew.wav -strict -2 \'"+OUTPUT_FILE + "\'"
+command =f"ffmpeg -f image2 -framerate {frameRate} -i {os.path.join(TEMP_FOLDER,'newFrame%06d.jpg')} -c:v libx264 -crf {FRAME_QUALITY_CRF} -pix_fmt yuv420p -hide_banner \'{os.path.join(TEMP_FOLDER,'newVideo.mp4')}\'"
+print(command)
+subprocess.call(command, shell=True)
+command = f"ffmpeg -i {os.path.join(TEMP_FOLDER,'newVideo.mp4')} -i {os.path.join(TEMP_FOLDER,'audioNew.wav')} -strict -2 -c:v copy -c:a aac \'{OUTPUT_FILE}\' -hide_banner"
+print(command)
 subprocess.call(command, shell=True)
 
 deletePath(TEMP_FOLDER)
