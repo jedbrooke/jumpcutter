@@ -101,12 +101,12 @@ AUDIO_FADE_ENVELOPE_SIZE = 400 # smooth out transitiion's audio by quickly fadin
 createPath(TEMP_FOLDER)
 
 # convert input video into jpg sequence
-command = "ffmpeg -i \'"+INPUT_FILE+ f"\' -qscale:v {FRAME_QUALITY} " +TEMP_FOLDER+"/frame%06d.jpg -pix_fmt yuv420p -hide_banner"
+command = f"ffmpeg -i \'{INPUT_FILE}\' -qscale:v {FRAME_QUALITY} {os.path.join(TEMP_FOLDER,'frame%06d.jpg')} -pix_fmt yuv420p -hide_banner"
 print(command)
 subprocess.call(command, shell=True)
 print(command)
 # extract audio from input video into .wav file
-command = "ffmpeg -i \'"+INPUT_FILE+"\' -ab 160k -ac 2 -ar "+str(SAMPLE_RATE)+" -vn "+TEMP_FOLDER+"/audio.wav -hide_banner"
+command = f"ffmpeg -i \'{INPUT_FILE}\' -ab 160k -ac 2 -ar {SAMPLE_RATE} -vn {os.path.join(TEMP_FOLDER,audio.wav)} -hide_banner"
 subprocess.call(command, shell=True)
 
 
