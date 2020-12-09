@@ -24,5 +24,5 @@ recommended this to me. However, my pyinstaller build did not work. :( HELP
 * [x] better framerate detection
 * [ ] detect variable framerate video and reencode as fixed framerate to avoid audio drift (figure out if vfr was actually the issue)
 * [x] support for file paths that contain spaces
-* [ ] multithread main processing for performance speedup
+* [x] multithread main processing for performance speedup
 
